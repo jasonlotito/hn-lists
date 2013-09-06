@@ -1,5 +1,24 @@
 (function() {
 
+  var pageTopList = document.getElementsByClassName('pageTop');
+
+  // Load username menu
+  (function(){
+    var pageTop = pageTopList[1];
+    var usernameLink = pageTop.firstChild;
+    var username = usernameLink.innerText;
+    var karmaContainer = pageTop.innerText.match(/\([0-9]*\)/)[0];
+    var commentLink = '/threads?id=' + encodeURI(username);
+    pageTop.innerHTML = pageTop.innerHTML.replace(karmaContainer, '<a href="' + commentLink + '">'+ karmaContainer +'</a>');
+
+    var savedLink = document.createElement('a');
+    savedLink.setAttribute('href', 'saved?id=' + encodeURI(username));
+    savedLink.innerText = 'saved'
+
+    pageTop.insertBefore(savedLink, pageTop.firstChild);
+    pageTop.insertBefore(document.createTextNode(' | '), pageTop.childNodes[1]);
+  })();
+
   var lists = {
     'leaders': {
       linkLabel: 'leaders',
@@ -31,99 +50,93 @@
     }
   };
 
-  var pageTop = document.getElementsByClassName('pageTop')[0];
-  var menu = document.createElement('span');
-  menu.setAttribute('style', 'display:none;wiidth:150px;position:absolute;background-color:#ff6600;margin:18px 0 0 -51px;padding:0 3px 3px 3px;');
-  menu.setAttribute('class', 'hn-lists-links');
+  (function(){
+    var closingTimer;
+    var clearedOnDropdownTrigger = false;
+    var pageTop = pageTopList[0];
+    var menuIsOpen = false;
 
-  var dropdownTrigger = document.createElement('a');
-  dropdownTrigger.innerText = ' | more ↧';
-  dropdownTrigger.setAttribute('href', '#');
-  dropdownTrigger.setAttribute('style', 'position:relative');
-  dropdownTrigger.addEventListener('click', function(e) {
-    e.preventDefault();
-    var styles = menu.getAttribute('style');
+    var menu = document.createElement('span');
+    menu.setAttribute('style', 'display:none;wiidth:150px;position:absolute;background-color:#ff6600;margin:18px 0 0 -52px;padding:0 3px 3px 3px;');
+    menu.setAttribute('class', 'hn-lists-links');
 
-    if (styles.indexOf('display:inline-block;') == - 1) {
-      styles = styles.replace('display:none;', 'display:inline-block;');
-      dropdownTrigger.innerText = ' | more ↥';
-    } else {
-      styles = styles.replace('display:inline-block;', 'display:none;');
-      dropdownTrigger.innerText = ' | more ↧';
-    }
+    var dropDownTrigger = document.createElement('a');
+    dropDownTrigger.innerText = ' | more ↧';
+    dropDownTrigger.setAttribute('href', '#');
+    dropDownTrigger.setAttribute('style', 'position:relative');
 
-    menu.setAttribute('style', styles);
-  });
+    dropDownTrigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      var styles = menu.getAttribute('style');
 
-  var closingTimer;
-  menu.addEventListener('mouseout', function(){
-    closingTimer = setTimeout(function() {
-      dropdownTrigger.click();
-    }, 500);
-  });
+      if (!menuIsOpen) {
+        menuIsOpen = true;
+        styles = styles.replace('display:none;', 'display:inline-block;');
+        dropDownTrigger.innerText = ' | more ↥';
+      } else {
+        menuIsOpen = false;
+        clearTimeout(closingTimer);
+        clearedOnDropdownTrigger = false;
+        styles = styles.replace('display:inline-block;', 'display:none;');
+        dropDownTrigger.innerText = ' | more ↧';
+      }
 
-  menu.addEventListener('mouseover', function(){
-    clearTimeout(closingTimer);
-  });
+      menu.setAttribute('style', styles);
+    });
 
-  var clearedOnDropdownTrigger = false;
-
-  dropdownTrigger.addEventListener('mouseover', function(){
-    clearedOnDropdownTrigger = true;
-    clearTimeout(closingTimer);
-  });
-
-  dropdownTrigger.addEventListener('mouseout', function(){
-    if(clearedOnDropdownTrigger){
-      clearedOnDropdownTrigger = false;
+    menu.addEventListener('mouseout', function() {
       closingTimer = setTimeout(function() {
-        dropdownTrigger.click();
+        dropDownTrigger.click();
       }, 500);
+    });
+
+    menu.addEventListener('mouseover', function() {
+      clearTimeout(closingTimer);
+    });
+
+    dropDownTrigger.addEventListener('mouseover', function() {
+      clearedOnDropdownTrigger = true;
+      clearTimeout(closingTimer);
+    });
+
+    dropDownTrigger.addEventListener('mouseout', function() {
+      if (clearedOnDropdownTrigger && menuIsOpen) {
+        clearedOnDropdownTrigger = false;
+        closingTimer = setTimeout(function() {
+          dropDownTrigger.click();
+        }, 500);
+      }
+    });
+
+    for (var link in lists) {
+      if (! lists.hasOwnProperty(link)) {
+        continue;
+      }
+
+      var listItem = lists[link];
+      var anchor = document.createElement('a');
+
+      if ('/' + link == window.location.pathname) {
+        var topSelContainer = document.createElement('span');
+        topSelContainer.setAttribute('class', 'topsel');
+        topSelContainer.appendChild(anchor);
+      }
+
+      anchor.setAttribute('href', link);
+      anchor.setAttribute('title', listItem.description);
+      anchor.setAttribute('style', 'display:block');
+      anchor.innerText = listItem.linkLabel;
+
+      if (topSelContainer) {
+        menu.appendChild(topSelContainer);
+        topSelContainer = null;
+      } else {
+        menu.appendChild(anchor);
+      }
+
     }
-  });
-
-  for (var link in lists) {
-    if (! lists.hasOwnProperty(link)) {
-      continue;
-    }
-
-    var listItem = lists[link];
-    var anchor = document.createElement('a');
-
-    if ('/' + link == window.location.pathname) {
-      var topSelContainer = document.createElement('span');
-      topSelContainer.setAttribute('class', 'topsel');
-      topSelContainer.appendChild(anchor);
-    }
-
-    anchor.setAttribute('href', link);
-    anchor.setAttribute('title', listItem.description);
-    anchor.setAttribute('style', 'display:block');
-    anchor.innerText = listItem.linkLabel;
-
-    if (topSelContainer) {
-      menu.appendChild(topSelContainer);
-      topSelContainer = null;
-    } else {
-      menu.appendChild(anchor);
-    }
-
-  }
-  pageTop.appendChild(dropdownTrigger);
-  pageTop.appendChild(menu);
-
-  // Attributions
-  var author = document.createElement('a');
-  author.innerText = 'jasonlotito';
-  author.setAttribute('href', 'https://news.ycombinator.com/user?id=jasonlotito');
-  var imageAttribution = document.createElement('a');
-  imageAttribution.innerText = 'icon by position relative (CC BY-SA 3.0)';
-  imageAttribution.setAttribute('href', 'http://www.position-relative.com/');
-  var bottom = document.getElementsByTagName('center')[0];
-
-  bottom.appendChild(author);
-  bottom.appendChild(document.createTextNode(' | '));
-  bottom.appendChild(imageAttribution);
-  bottom.appendChild(document.createElement('br'));
+    pageTop.appendChild(dropDownTrigger);
+    pageTop.appendChild(menu);
+  })();
 
 })();
