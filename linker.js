@@ -5,9 +5,12 @@
   // Load username menu
   (function(){
     var pageTop = pageTopList[1];
+    if(!pageTop) return;
     var usernameLink = pageTop.firstChild;
     var username = usernameLink.innerText;
-    var karmaContainer = pageTop.innerText.match(/\([0-9]*\)/)[0];
+    var matches = pageTop.innerText.match(/\([0-9]*\)/);
+    if (!matches) return;
+    var karmaContainer =[0];
     var commentLink = '/threads?id=' + encodeURI(username);
     pageTop.innerHTML = pageTop.innerHTML.replace(karmaContainer, '<a href="' + commentLink + '">'+ karmaContainer +'</a>');
 
@@ -54,6 +57,7 @@
     var closingTimer;
     var clearedOnDropdownTrigger = false;
     var pageTop = pageTopList[0];
+    if(!pageTop) return;
     var menuIsOpen = false;
 
     var menu = document.createElement('span');
