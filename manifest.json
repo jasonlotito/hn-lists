@@ -1,0 +1,18 @@
+{
+  "name": "HackerNews Lists",
+  "version": "0.1",
+  "manifest_version": 2,
+  "description": "Adds the additiona /lists from HN to the top bar",
+  "browser_action": {
+    "default_title": "HackerNews Lists"
+  },
+  "permissions": [
+    "*://news.ycombinator.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://news.ycombinator.com/*"],
+      "js": ["linker.js"]
+    }
+  ]
+}
