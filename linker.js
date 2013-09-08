@@ -10,7 +10,7 @@
     var username = usernameLink.innerText;
     var matches = pageTop.innerText.match(/\([0-9]*\)/);
     if (!matches) return;
-    var karmaContainer =[0];
+    var karmaContainer = matches[0];
     var commentLink = '/threads?id=' + encodeURI(username);
     pageTop.innerHTML = pageTop.innerHTML.replace(karmaContainer, '<a href="' + commentLink + '">'+ karmaContainer +'</a>');
 
