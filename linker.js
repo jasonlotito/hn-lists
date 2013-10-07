@@ -130,6 +130,13 @@
     'lists': {
       linkLabel: 'lists',
       description: 'The lists page.'
+    },
+    'splitter': {
+      linkLabel: '-'
+    },
+    'http://hnnotify.com/': {
+      linkLabel: 'hn notify',
+      description: 'third-party: Email Reply Notifications for Hacker News'
     }
   };
 
@@ -193,23 +200,32 @@
     });
 
     for (var link in lists) {
-      if (! lists.hasOwnProperty(link)) {
+      if ( ! lists.hasOwnProperty(link)) {
         continue;
       }
 
       var listItem = lists[link];
-      var anchor = document.createElement('a');
 
-      if ('/' + link == window.location.pathname) {
+      if (listItem.linkLabel == '-'){
         var topSelContainer = document.createElement('span');
-        topSelContainer.setAttribute('class', 'topsel');
-        topSelContainer.appendChild(anchor);
-      }
+        var hrElement = document.createElement('hr');
+        hrElement.setAttribute('style', 'border-top: 1px solid #000;border-bottom: 0px solid transparent; margin:3px 0 2px');
+        topSelContainer.appendChild(hrElement);
+      } else {
+        var anchor = document.createElement('a');
 
-      anchor.setAttribute('href', link);
-      anchor.setAttribute('title', listItem.description);
-      anchor.setAttribute('style', 'display:block');
-      anchor.innerText = listItem.linkLabel;
+        if ('/' + link == window.location.pathname) {
+          var topSelContainer = document.createElement('span');
+          topSelContainer.setAttribute('class', 'topsel');
+          topSelContainer.appendChild(anchor);
+        }
+
+        anchor.setAttribute('href', link);
+        anchor.setAttribute('title', listItem.description);
+        anchor.setAttribute('style', 'display:block');
+        anchor.innerText = listItem.linkLabel;
+
+      }
 
       if (topSelContainer) {
         menu.appendChild(topSelContainer);
