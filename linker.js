@@ -4,6 +4,124 @@
   var pageTopList = document.getElementsByClassName('pageTop');
   var linkTitles = document.getElementsByClassName('title');
 
+  var USERNAME;
+
+  function PopUp(title, content){
+
+    var mouseIsDown = false,
+      that = this,
+      initialOffsetX = 0,
+      initialOffsetY = 0;
+
+    this.screen = document.createElement('div');
+    this.screen.style.backgroundColor = 'rgba(0,0,0,0.2)';
+    this.screen.style.display = 'none';
+    this.screen.style.position = 'absolute';
+    this.screen.style.top = 0;
+    this.screen.style.left = 0;
+    this.screen.style.right = 0;
+    this.screen.style.bottom = 0;
+    this.isShowing = false;
+    this.width = '300px';
+    this.title = title;
+    this.content = content;
+    this.left = 0;
+    this.body = document.body;
+    this.body.appendChild(this.screen);
+    this.ePopup = document.createElement('div');
+    this.ePopup.style.display = 'none';
+
+    this.ePopup.style.position = 'absolute';
+    this.ePopup.style.border = '1px solid rgba(0,0,0,0.5)';
+    this.ePopup.style.top = '100px';
+    this.ePopup.style.boxShadow = 'rgba(0,0,0,0.5) 0px 0px 10px';
+
+    this.eTitleContainer = document.createElement('div');
+    this.eTitleContainer.setAttribute('style', 'background-color: #ff6600; color: #000;padding: 2px 4px');
+    this.eTitleContainer.style.cursor = 'pointer';
+    this.eTitleContainer.appendChild(document.createTextNode(this.title));
+
+    this.eTitleContainer.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      mouseIsDown = true;
+      that.eTitleContainer.style.cursor = 'move';
+      initialOffsetX = e.layerX;
+      initialOffsetY = e.layerY;
+    });
+
+    window.addEventListener('mousemove', function(e){
+      e.preventDefault();
+      if(mouseIsDown){
+        that.ePopup.style.left = e.clientX - initialOffsetX;
+        that.ePopup.style.top = e.clientY - initialOffsetY;
+      }
+    });
+
+    window.addEventListener('mouseup', function(e){
+      e.preventDefault();
+      mouseIsDown = false;
+      that.eTitleContainer.style.cursor = 'pointer';
+    });
+
+    var closeLink = document.createElement('a');
+    closeLink.innerText = 'X';
+    closeLink.title = 'Close Window';
+    closeLink.style.cursor = 'pointer';
+    closeLink.style.float = 'right';
+    closeLink.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      that.hide();
+    });
+
+    this.screen.addEventListener('click', function(e){
+      closeLink.click();
+    });
+
+    this.eTitleContainer.appendChild(closeLink);
+
+    this.eContentContainer = document.createElement('div');
+    this.eContentContainer.setAttribute('style', 'background-color: #f6f6ef; color: #000;padding: 2px 4px;max-height:450px;overflow:scroll;');
+    this.eContentContainer.addEventListener('mouseover', function(e){
+//      if(isOverflowed(this.eContentContainer)){
+        document.body.style.overflow = 'hidden';
+//      }
+    });
+
+    this.eContentContainer.addEventListener('mouseout', function(e){
+//      if(isOverflowed(this.eContentContainer)){
+        document.body.style.overflow = 'auto';
+//      }
+    });
+
+    this.ePopup.appendChild(this.eTitleContainer);
+    this.ePopup.appendChild(this.eContentContainer);
+    this.body.appendChild(this.ePopup);
+  }
+
+  PopUp.prototype.show = function(){
+    if(this.isShowing) return;
+
+    this.eContentContainer.innerHTML = this.content;
+    this.ePopup.style.width = this.width;
+    this.ePopup.style.display = 'block';
+    this.left = (window.innerWidth / 2) - (this.width / 2);
+    this.ePopup.style.left = this.left + 'px';
+    this.isShowing = true;
+    this.screen.style.display = 'block';
+
+  };
+
+  PopUp.prototype.hide = function(){
+    this.screen.style.display = 'none';
+    this.ePopup.style.display = 'none';
+    this.isShowing = false;
+  };
+
+  function isOverflowed(element){
+    return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
+  }
+
   function centerPoint(windowDimension, popupDimension) {
     return (windowDimension / 2) - (popupDimension / 2);
   }
@@ -13,6 +131,29 @@
       callback(response.status);
     });
   }
+
+  function addFriend(name, callback){
+    chrome.extension.sendRequest({method: "addFriend", name:name}, function(response) {
+      callback(response.friendList);
+    });
+  }
+
+  function deleteFriend(name, callback){
+    chrome.extension.sendRequest({method: "deleteFriend", name:name}, function(response) {
+      callback(response.friendList);
+    });
+  }
+
+  function getFriends(callback){
+    chrome.extension.sendRequest({method: "getFriends"}, function(response) {
+      callback(response.friendList);
+    });
+  }
+
+  function insertAfter(referenceNode, newNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+  }
+
 
   function Popover(){}
 
@@ -87,6 +228,8 @@
       username = usernameLink.innerText,
       matches = pageTop.innerText.match(/\([0-9]*\)/);
 
+    USERNAME = username;
+
     if (!matches) return;
 
     var karmaContainer = matches[0],
@@ -131,6 +274,11 @@
       linkLabel: 'lists',
       description: 'The lists page.'
     },
+    '^friendList': {
+      linkLabel: 'friends',
+      description: 'Your friends list',
+      id: 'friendsPopup'
+    },
     'splitter': {
       linkLabel: '-'
     },
@@ -153,8 +301,7 @@
 
     var dropDownTrigger = document.createElement('a');
     dropDownTrigger.innerText = ' | more ↧';
-    dropDownTrigger.setAttribute('href', '#');
-    dropDownTrigger.setAttribute('style', 'position:relative');
+    dropDownTrigger.setAttribute('style', 'position:relative;cursor:pointer;');
 
     dropDownTrigger.addEventListener('click', function(e) {
       e.preventDefault();
@@ -211,6 +358,75 @@
         var hrElement = document.createElement('hr');
         hrElement.setAttribute('style', 'border-top: 1px solid #000;border-bottom: 0px solid transparent; margin:3px 0 2px');
         topSelContainer.appendChild(hrElement);
+      } else if (link == '^friendList') {
+        var anchor = document.createElement('a');
+        anchor.setAttribute('title', listItem.description);
+        anchor.setAttribute('style', 'display:block;cursor:pointer;');
+        anchor.setAttribute('id', listItem.id);
+        anchor.innerText = listItem.linkLabel;
+        var popup = new PopUp('Following', 'content');
+
+        anchor.addEventListener('click', function(){
+          getFriends(function(friendsList){
+            var content = document.createElement('table'),
+              hRow = document.createElement('tr'),
+              hUsername = document.createElement('th'),
+              hComments = document.createElement('th'),
+              hSubmissions = document.createElement('th');
+
+            content.style.width = '100%';
+
+            hUsername.style.fontSize = '12px';
+            hComments.style.fontSize = '12px';
+            hSubmissions.style.fontSize = '12px';
+
+            hUsername.innerText = 'Username';
+            hComments.innerText = 'Comments';
+            hSubmissions.innerText = 'Submissions';
+
+            hRow.appendChild(hUsername);
+            hRow.appendChild(hComments);
+            hRow.appendChild(hSubmissions);
+
+            content.appendChild(hRow);
+
+            for(var x in friendsList) {
+              if(!friendsList.hasOwnProperty(x)) continue;
+              var name = friendsList[x],
+              tableRow = document.createElement('tr'),
+              tableUsernameCell = document.createElement('td'),
+              tableCommentsCell = document.createElement('td'),
+              tableSubmissionsCell = document.createElement('td');
+
+              var profilePageLink = document.createElement('a');
+              profilePageLink.setAttribute('href', 'user?id=' + name);
+              profilePageLink.innerText = name;
+              tableUsernameCell.appendChild(profilePageLink);
+
+              var commentsPageLink = document.createElement('a');
+              commentsPageLink.setAttribute('href', 'threads?id=' + name);
+              commentsPageLink.innerText = 'view';
+              tableCommentsCell.style.textAlign = 'center';
+              tableCommentsCell.appendChild(commentsPageLink);
+
+              var submittedPageLink = document.createElement('a');
+              submittedPageLink.setAttribute('href', 'submitted?id=' + name);
+              submittedPageLink.innerText = 'view';
+              tableSubmissionsCell.style.textAlign = 'center';
+              tableSubmissionsCell.appendChild(submittedPageLink);
+
+              tableRow.appendChild(tableUsernameCell);
+              tableRow.appendChild(tableCommentsCell);
+              tableRow.appendChild(tableSubmissionsCell);
+
+              content.appendChild(tableRow);
+            }
+
+            popup.content = content.outerHTML;
+            popup.width = 350;
+            popup.show();
+          });
+        });
       } else {
         var anchor = document.createElement('a');
 
@@ -233,10 +449,91 @@
       } else {
         menu.appendChild(anchor);
       }
-
     }
+
     pageTop.appendChild(dropDownTrigger);
     pageTop.appendChild(menu);
   })();
+
+  getFriends(function(currentFriendsList){
+
+    function makeLinkAdder(e){
+      e.innerText = ' ☆';
+      e.setAttribute('data-type', 'add');
+      e.setAttribute('title', 'Follow user');
+      e.nameLink.setAttribute('style', '');
+    }
+
+    function makeLinkDeleter(e){
+      e.innerText = ' ★';
+      e.setAttribute('data-type', 'remove');
+      e.setAttribute('title', 'Stop following user');
+      e.nameLink.setAttribute('style', 'background-color: #828282; color: #fff;padding: 2px 4px; border-radius: 3px;');
+    }
+
+    function updateUserLinks(name, adderOrDeleter, linkList){
+
+      if(adderOrDeleter == 'add') {
+        modFunc = makeLinkAdder;
+      } else {
+        modFunc = makeLinkDeleter;
+      }
+
+
+      for(var x in linkList){
+        if (!linkList.hasOwnProperty(x)) continue;
+        var link = linkList[x];
+        if(link.getAttribute('data-name') != name) continue;
+        modFunc(link);
+      }
+    }
+
+    var links = Array.prototype.slice.call(document.getElementsByTagName('a')),
+      userLinkList = [];
+    var userLinkRegex = /^http[s]?:\/\/news.ycombinator.com\/user\?id=/;
+
+    for(var x in links){
+      if (!links.hasOwnProperty(x)) continue;
+      var userLink = links[x];
+
+      if(userLink.innerText == USERNAME) continue;
+
+      if (userLink.href && userLink.href.match(userLinkRegex)) {
+
+        var addFriendElement = document.createElement('a');
+        addFriendElement.nameLink = userLink;
+        userLinkList.push(addFriendElement);
+
+        if(currentFriendsList.indexOf(userLink.innerText) == -1) {
+          makeLinkAdder(addFriendElement);
+        } else {
+          makeLinkDeleter(addFriendElement);
+        }
+
+        addFriendElement.setAttribute('style', 'cursor:pointer;font-weight: bold;text-decoration:none;');
+        addFriendElement.setAttribute('data-name', userLink.innerText);
+
+
+        addFriendElement.addEventListener('click', function(e){
+          e.preventDefault();
+          var that = this;
+          var modType = that.getAttribute('data-type');
+          if (modType == 'add') {
+            addFriend(that.getAttribute('data-name'), function(friendList){
+              currentFriendsList = friendList;
+              updateUserLinks(that.getAttribute('data-name'), 'deleter', userLinkList);
+            });
+          } else if (modType == 'remove') {
+            deleteFriend(that.getAttribute('data-name'), function(friendList){
+              currentFriendsList = friendList;
+              updateUserLinks(that.getAttribute('data-name'), 'add', userLinkList);
+            });
+          }
+
+        });
+        insertAfter(userLink, addFriendElement);
+      }
+    }
+  });
 
 })();

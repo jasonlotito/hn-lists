@@ -3,6 +3,7 @@
 
   var showTwitter = document.getElementById('showTwitter');
   var showTwitterText = document.getElementById('showTwitterText');
+  var followersList = document.getElementById('followersList');
 
   function SettingsUpdate() {
     this.timeouts = {};
@@ -44,6 +45,36 @@
 
     localStorage[SHOW_TWITTER] === 'true' && showTwitter.setAttribute('checked', 'checked');
   })();
+
+  // Show followers
+  var showFollowers = function(){
+    followersList.innerHTML = '';
+    var friendsList = JSON.parse(localStorage['friendsList']);
+    for(var x in friendsList) {
+      if(!friendsList.hasOwnProperty(x)) continue;
+      var name = friendsList[x],
+        stopFollowingText  = document.createTextNode(' ' + name),
+        stopFollowingLink = document.createElement('a');
+      stopFollowingLink.setAttribute('style', 'cursor:pointer');
+      stopFollowingLink.setAttribute('data-name', name);
+      stopFollowingLink.setAttribute('title', 'stop following');
+      stopFollowingLink.innerText = '(x)';
+      stopFollowingLink.addEventListener('click', function(){
+        var index = friendsList.indexOf(this.getAttribute('data-name'));
+
+        if( index > -1 ){
+          friendsList.splice(index, 1);
+        }
+        localStorage['friendsList'] = JSON.stringify(friendsList);
+        showFollowers();
+      });
+
+      followersList.appendChild(stopFollowingLink);
+      followersList.appendChild(stopFollowingText);
+      followersList.appendChild(document.createElement('br'));
+    }
+  };
+  showFollowers();
 
 
 })();
