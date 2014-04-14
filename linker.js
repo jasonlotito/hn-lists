@@ -50,7 +50,6 @@
     });
 
     window.addEventListener('mousemove', function(e){
-      e.preventDefault();
       if(mouseIsDown){
         that.ePopup.style.left = e.clientX - initialOffsetX;
         that.ePopup.style.top = e.clientY - initialOffsetY;
@@ -58,7 +57,6 @@
     });
 
     window.addEventListener('mouseup', function(e){
-      e.preventDefault();
       mouseIsDown = false;
       that.eTitleContainer.style.cursor = 'pointer';
     });
