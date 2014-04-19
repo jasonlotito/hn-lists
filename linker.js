@@ -508,7 +508,7 @@
           makeLinkDeleter(addFriendElement);
         }
 
-        addFriendElement.setAttribute('style', 'cursor:pointer;font-weight: bold;text-decoration:none;');
+        addFriendElement.setAttribute('style', 'cursor:pointer;font-weight: bold;text-decoration:none;font-size:8px;');
         addFriendElement.setAttribute('data-name', userLink.innerText);
 
 
